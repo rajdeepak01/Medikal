@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>My Appointments - ApkaDr.</title>
+    <meta http-equiv="refresh" content="6">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            overflow-x: hidden; /* Prevent horizontal scroll caused by off-screen sidebar */
+        }
+
+        /* Custom color variables for consistency */
+        :root {
+            --apkadr-dark-blue: #1e3a8a; /* From logo's pen */
+            --apkadr-gold: #facc15; /* From logo's pen accent */
+            --apkadr-black: #343a40; /* General dark text/element, from logo text */
+            --apkadr-light-gray: #f7f7f7; /* Soft background */
+            --apkadr-white: #ffffff;
+        }
+
+        .card-aesthetic {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(16px);
+            border-radius: 1.5rem;
+            box-shadow: 0 25px 40px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .input-aesthetic {
+            border: 1px solid #e5e7eb;
+            transition: all 0.3s ease;
+        }
+
+        .input-aesthetic:focus {
+            border-color: #6366f1;
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
+            outline: none;
+        }
+
+        .button-aesthetic {
+            background: linear-gradient(to right, #6366f1, #8b5cf6);
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(99, 102, 241, 0.3);
+        }
+
+        .button-aesthetic:hover {
+            background: linear-gradient(to right, #4f46e5, #7c3aed);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(99, 102, 241, 0.4);
+        }
+
+        /* Custom styles for sidebar animation */
+        .sidebar {
+            transition: transform 0.3s ease-in-out;
+            transform: translateX(-100%);
+            box-shadow: 5px 0 15px rgba(0,0,0,0.1);
+        }
+
+        .sidebar.open {
+            transform: translateX(0);
+        }
+
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 40;
+        }
+
+        .overlay.open {
+            display: block;
+        }
+
+        /* Adjustments for medium and larger screens */
+        @media (min-width: 768px) {
+            .sidebar {
+                transform: translateX(0);
+                position: relative;
+                box-shadow: none;
+            }
+            .overlay {
+                display: none;
+            }
+            .hamburger-icon {
+                display: none;
+            }
+            .md\:w-full {
+                width: 100%; /* Ensure main content takes full width when sidebar is present */
+            }
+        }
+
+        /* Specific styles for appointment table (desktop) */
+        .appointment-table-row {
+            transition: background-color 0.2s ease;
+        }
+        .appointment-table-row:hover {
+            background-color: rgba(99, 102, 241, 0.05); /* Light indigo hover */
+        }
+        .appointment-table thead {
+            background-color: var(--apkadr-dark-blue);
+        }
+
+        .appointment-table th {
+            color: var(--apkadr-white);
+            font-weight: 600;
+            text-align: left;
+            vertical-align: top;
+            padding: 0.75rem 1rem; /* px-4 py-3 */
+        }
+        
+        .appointment-table td {
+            text-align: left;
+            vertical-align: top;
+            padding: 1rem; /* px-4 py-3 */
+        }
+
+        /* --- Styles for Custom Toast Notifications (CENTERED) --- */
+        .toast-container {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1000;
+            display: flex;
+            justify-content: center; /* Center horizontally */
+            align-items: center; /* Center vertically */
+            pointer-events: none; /* Allows clicks to pass through if no toast is showing */
+            width: 100%; /* Ensure it spans the width to perfectly center the toast */
+            height: 100%; /* Ensure it spans the height to perfectly center the toast */
+            padding: 1rem; /* Add some padding for smaller screens */
+            box-sizing: border-box; /* Include padding in element's total width and height */
+        }
+
+        .custom-toast {
+            background-color: white;
+            border-radius: 0.75rem; /* Slightly larger border-radius */
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2); /* More prominent shadow */
+            padding: 1.5rem 2rem; /* More padding */
+            display: flex;
+            flex-direction: column; /* Stack icon and text vertically for better centering */
+            align-items: center; /* Align items vertically in the toast */
+            gap: 0.75rem; /* Space between icon and text */
+            opacity: 0;
+            transform: scale(0.9) translateY(0); /* Start slightly smaller and at original Y position */
+            transition: opacity 0.4s ease-out, transform 0.4s ease-out; /* Slower transition */
+            max-width: 400px; /* Wider toast */
+            position: relative;
+            text-align: center; /* Center text within toast */
+            pointer-events: auto; /* Re-enable pointer events for the toast itself */
+            border: 1px solid #e2e8f0; /* Subtle border for definition */
+        }
+
+        .custom-toast.show {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+        }
+
+        .custom-toast .icon {
+            font-size: 2.5rem; /* Larger icon */
+            color: #22c55e; /* Green for success */
+        }
+
+        .custom-toast .icon.text-red-500 { /* Specific color for rejected icon */
+            color: #ef4444;
+        }
+
+        .custom-toast .content {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .custom-toast .title {
+            font-weight: 700; /* Bolder title */
+            color: #1a202c;
+            font-size: 1.4rem; /* Larger title font */
+            margin-bottom: 0.25rem; /* Less space to message */
+        }
+
+        .custom-toast .message {
+            font-size: 1.1rem; /* Larger message font */
+            color: #4a5568;
+            line-height: 1.5;
+        }
+
+        .custom-toast .close-button {
+            background: none;
+            border: none;
+            font-size: 1.8rem; /* Larger close button */
+            color: #a0aec0;
+            cursor: pointer;
+            padding: 0.25rem;
+            position: absolute;
+            top: 0.5rem;
+            right: 0.75rem;
+            line-height: 1; /* Adjust line height for better alignment */
+        }
+
+        .custom-toast .close-button:hover {
+            color: #718096;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-blue-100 via-purple-100 to-pink-100 min-h-screen flex flex-col">
+    <header class="md:hidden bg-white shadow-md p-4 flex justify-between items-center z-30">
+        <div class="flex items-center gap-2">
+            <img src="/static/images/apkadr.logo.jpg" alt="ApkaDr. Logo" class="h-10 w-10 rounded-full object-cover border border-indigo-600">
+            <h1 class="text-2xl font-extrabold text-gray-800">ApkaDr.</h1>
+        </div>
+        <button id="hamburger" class="text-gray-600 focus:outline-none p-2 rounded-md hover:bg-gray-100">
+            <svg class="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+            </svg>
+        </button>
+    </header>
+
+    <div id="overlay" class="overlay" onclick="toggleSidebar()"></div>
+
+    <div class="flex flex-1">
+        <nav id="sidebar" class="sidebar fixed inset-y-0 left-0 bg-indigo-700 text-white w-64 p-5 z-50 md:relative md:translate-x-0">
+            <div class="flex justify-between items-center mb-10 md:mb-8">
+                <div class="hidden md:flex items-center gap-2">
+                    <img src="/static/images/apkadr.logo.jpg" alt="ApkaDr. Logo" class="h-10 w-10 rounded-full object-cover border border-indigo-400">
+                    <h4 class="text-3xl font-extrabold">ApkaDr.</h4>
+                </div>
+                <button class="md:hidden text-white p-2 rounded-md hover:bg-indigo-600" onclick="toggleSidebar()">
+                    <svg class="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            <ul class="nav flex flex-col space-y-4">
+                <li><a class="nav-link block py-3 px-4 rounded-lg hover:bg-indigo-600 transition duration-200 text-white text-lg font-medium" href="{{ url_for('user_dashboard', user_id=session.get('user_id')) }}">Dashboard</a></li>
+                <li><a class="nav-link block py-3 px-4 rounded-lg hover:bg-indigo-600 transition duration-200 text-white text-lg font-medium" href="{{ url_for('search_doctors') }}">Book Appointment</a></li>
+                <li><a class="nav-link block py-3 px-4 rounded-lg bg-indigo-600 text-white text-lg font-medium" href="{{ url_for('my_appointments') }}">My Appointments</a></li>
+                <li><a class="nav-link block py-3 px-4 rounded-lg hover:bg-indigo-600 transition duration-200 text-white text-lg font-medium" href="{{ url_for('user_profile') }}">My Profile</a></li>
+                <li><a class="nav-link block py-3 px-4 rounded-lg hover:bg-indigo-600 transition duration-200 text-white text-lg font-medium" href="{{ url_for('logout') }}">Logout</a></li>
+            </ul>
+        </nav>
+
+        <main class="flex-1 p-6 md:p-10 md:w-full">
+            <div class="card-aesthetic p-6 md:p-10 max-w-5xl mx-auto">
+                <h2 class="text-3xl md:text-4xl font-extrabold text-gray-800 mb-6 text-center">Your Appointments</h2>
+                <p class="text-gray-600 text-lg mb-8 text-center">Track the status and details of your booked consultations.</p>
+
+                <div class="overflow-x-auto hidden md:block">
+                    <table class="min-w-full divide-y divide-gray-200 appointment-table">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th scope="col" class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider rounded-tl-lg">Doctor</th>
+                                <th scope="col" class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">Date</th>
+                                <th scope="col" class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">Time</th>
+                                <th scope="col" class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">Status</th>
+                                <th scope="col" class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">Token</th>
+                                <th scope="col" class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider rounded-tr-lg">Details</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            {% for appointment in appointments %}
+                            <tr class="appointment-table-row">
+                                <td class="px-4 py-3 text-sm font-medium text-gray-900">{{ appointment.doctor.full_name }}</td>
+                                <td class="px-4 py-3 text-sm text-gray-600">{{ appointment.appointment_date.strftime('%Y-%m-%d') }}</td>
+                                <td class="px-4 py-3 text-sm text-gray-600">{{ appointment.appointment_time }}</td>
+                                <td class="px-4 py-3">
+                                    {% if appointment.status == 'pending' %}
+                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800 appointment-status" data-appointment-id="{{ appointment.id }}">Pending</span>
+                                    {% elif appointment.status == 'confirmed' %}
+                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800 appointment-status" data-appointment-id="{{ appointment.id }}">Confirmed</span>
+                                    {% elif appointment.status == 'rejected' %}
+                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800 appointment-status" data-appointment-id="{{ appointment.id }}">Rejected</span>
+                                    {% else %}
+                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800 appointment-status" data-appointment-id="{{ appointment.id }}">{{ appointment.status.capitalize() }}</span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-4 py-3 text-sm text-gray-600">{{ appointment.token_number if appointment.token_number else '--' }}</td>
+                                <td class="px-4 py-3 text-sm text-gray-600">
+                                    {% if appointment.patient_name %}
+                                        <span class="font-bold">Patient:</span> {{ appointment.patient_name }}<br>
+                                        {{ appointment.patient_notes if appointment.patient_notes else 'No patient notes.' }}
+                                    {% else %}
+                                        {{ appointment.symptoms if appointment.symptoms else 'N/A' }}
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="6" class="px-4 py-3 text-center text-sm text-gray-600">No appointments found. Book your first appointment today!</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="md:hidden space-y-4">
+                    {% for appointment in appointments %}
+                    <div class="card-aesthetic p-4">
+                        <div class="mb-2">
+                            <p class="text-lg font-semibold text-gray-800">Dr. {{ appointment.doctor.full_name }}</p>
+                        </div>
+                        <p class="text-sm text-gray-600 mb-1">
+                            <span class="font-medium">Date:</span> {{ appointment.appointment_date.strftime('%Y-%m-%d') }}
+                        </p>
+                        <p class="text-sm text-gray-600 mb-1">
+                            <span class="font-medium">Time:</span> {{ appointment.appointment_time }}
+                        </p>
+                        <p class="text-sm text-gray-600 mb-1">
+                            <span class="font-medium">Status:</span> 
+                            {% if appointment.status == 'pending' %}
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800 appointment-status" data-appointment-id="{{ appointment.id }}">Pending</span>
+                            {% elif appointment.status == 'confirmed' %}
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800 appointment-status" data-appointment-id="{{ appointment.id }}">Confirmed</span>
+                            {% elif appointment.status == 'rejected' %}
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800 appointment-status" data-appointment-id="{{ appointment.id }}">Rejected</span>
+                            {% else %}
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800 appointment-status" data-appointment-id="{{ appointment.id }}">{{ appointment.status.capitalize() }}</span>
+                            {% endif %}
+                        </p>
+                        <p class="text-sm text-gray-600 mb-1">
+                            <span class="font-medium">Token:</span> {{ appointment.token_number if appointment.token_number else '--' }}
+                        </p>
+                        <p class="text-sm text-gray-600">
+                            <span class="font-medium">Details:</span> 
+                            {% if appointment.patient_name %}
+                                <span class="font-bold">Patient:</span> {{ appointment.patient_name }}<br>
+                                {{ appointment.patient_notes if appointment.patient_notes else 'No patient notes.' }}
+                            {% else %}
+                                {{ appointment.symptoms if appointment.symptoms else 'N/A' }}
+                            {% endif %}
+                        </p>
+                    </div>
+                    {% else %}
+                    <div class="card-aesthetic p-4 text-center text-gray-600">
+                        No appointments found. Book your first appointment today!
+                    </div>
+                    {% endfor %}
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <div class="toast-container"></div>
+
+
+    <script>
+        // Hamburger menu functionality
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('overlay');
+            sidebar.classList.toggle('open');
+            overlay.classList.toggle('open');
+        }
+
+        document.getElementById('hamburger').addEventListener('click', toggleSidebar);
+
+        // Close sidebar if screen resized to desktop while open
+        window.addEventListener('resize', () => {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('overlay');
+            if (window.innerWidth >= 768) {
+                sidebar.classList.remove('open');
+                overlay.classList.remove('open');
+            }
+        });
+
+        // --- Toast Notification Functions (Updated for Centered Display and Hindi) ---
+        function showToast(title, message, iconClass, duration = 5000) { // Default duration reduced to 5 seconds
+            const toastContainer = document.querySelector('.toast-container');
+            
+            // Clear any existing toasts to ensure only one is shown at the center
+            toastContainer.innerHTML = ''; 
+
+            const toast = document.createElement('div');
+            toast.classList.add('custom-toast');
+            toast.innerHTML = `
+                <div class="icon ${iconClass}"></div>
+                <div class="content">
+                    <div class="title">${title}</div>
+                    <div class="message">${message}</div>
+                </div>
+                <button class="close-button" onclick="this.closest('.custom-toast').remove()">&times;</button>
+            `;
+            toastContainer.appendChild(toast);
+
+            // Trigger reflow to ensure animation plays
+            void toast.offsetWidth; 
+            toast.classList.add('show');
+
+            setTimeout(() => {
+                toast.classList.remove('show');
+                // Use a short delay to allow the fade-out transition to complete before removing
+                toast.addEventListener('transitionend', function handler() {
+                    toast.remove();
+                    toast.removeEventListener('transitionend', handler); // Clean up listener
+                });
+            }, duration);
+        }
+
+        // Variables to store seen appointment IDs for confirmed and rejected statuses
+        let confirmedAppointmentIds = new Set();
+        let rejectedAppointmentIds = new Set();
+
+        // Load from sessionStorage to persist across refreshes
+        if (sessionStorage.getItem('confirmedAppointmentIds')) {
+            try {
+                confirmedAppointmentIds = new Set(JSON.parse(sessionStorage.getItem('confirmedAppointmentIds')));
+            } catch (e) {
+                console.error("Error parsing confirmedAppointmentIds from sessionStorage:", e);
+            }
+        }
+        if (sessionStorage.getItem('rejectedAppointmentIds')) {
+            try {
+                rejectedAppointmentIds = new Set(JSON.parse(sessionStorage.getItem('rejectedAppointmentIds')));
+            } catch (e) {
+                console.error("Error parsing rejectedAppointmentIds from sessionStorage:", e);
+            }
+        }
+
+        // Function to check appointment statuses and show toast
+        function checkAndShowStatusToast() {
+            const userName = "{{ user.full_name if user else 'प्रिय उपयोगकर्ता' }}"; // Fallback to 'प्रिय उपयोगकर्ता' for Hindi
+
+            const statusElements = document.querySelectorAll('.appointment-status');
+            let newStatusFound = false;
+
+            statusElements.forEach(element => {
+                const appointmentId = element.dataset.appointmentId;
+                const status = element.textContent.trim().toLowerCase();
+
+                if (status === 'confirmed' && !confirmedAppointmentIds.has(appointmentId)) {
+                    showToast(
+                        'Appointment Accepted', // Hindi title for Accepted
+                        `${userName}, आपका Appointment सफलतापूर्वक accept हो गया है।`, // Hindi message for Accepted
+                        'text-green-500 fas fa-check-circle'
+                    );
+                    confirmedAppointmentIds.add(appointmentId);
+                    // Remove from rejected if it was previously rejected and now confirmed
+                    if (rejectedAppointmentIds.has(appointmentId)) {
+                        rejectedAppointmentIds.delete(appointmentId);
+                    }
+                    newStatusFound = true;
+                } else if (status === 'rejected' && !rejectedAppointmentIds.has(appointmentId)) {
+                    showToast(
+                        'Appointment Rejected', // Hindi title for Rejected
+                        `${userName}, आपका Appointment Reject हो गया है।`, // Hindi message for Rejected
+                        'text-red-500 fas fa-times-circle'
+                    );
+                    rejectedAppointmentIds.add(appointmentId);
+                    // Remove from confirmed if it was previously confirmed and now rejected (unlikely but good for robustness)
+                    if (confirmedAppointmentIds.has(appointmentId)) {
+                        confirmedAppointmentIds.delete(appointmentId);
+                    }
+                    newStatusFound = true;
+                }
+            });
+
+            // Save updated IDs to sessionStorage
+            if (newStatusFound) {
+                sessionStorage.setItem('confirmedAppointmentIds', JSON.stringify(Array.from(confirmedAppointmentIds)));
+                sessionStorage.setItem('rejectedAppointmentIds', JSON.stringify(Array.from(rejectedAppointmentIds)));
+            }
+        }
+
+        // --- Initial check on page load ---
+        document.addEventListener('DOMContentLoaded', () => {
+            checkAndShowStatusToast(); 
+        });
+
+    </script>
+
+</body>
+</html>

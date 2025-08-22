@@ -1,0 +1,64 @@
+# ------------------------
+# Python
+# ------------------------
+__pycache__/
+*.pyc
+*.pyd
+*.pyo
+.Python
+
+# Virtual environments
+env/
+venv/
+lib/
+lib64/
+bin/
+share/
+
+# Distribution / packaging
+/dist/
+/build/
+*.egg-info/
+
+# Test coverage
+.coverage
+
+# ------------------------
+# Flask
+# ------------------------
+# Flask instance folder (contains local SQLite DB, configs)
+instance/
+
+# ------------------------
+# Database files
+# ------------------------
+*.sqlite3
+*.db
+*.sql
+
+# ------------------------
+# Environment variables
+# ------------------------
+.env
+.flaskenv
+
+# ------------------------
+# Editor / IDE settings
+# ------------------------
+.vscode/              # VS Code
+.idea/                # PyCharm / IntelliJ
+*.sublime-project
+*.sublime-workspace
+
+# ------------------------
+# OS generated files
+# ------------------------
+.DS_Store             # macOS
+Thumbs.db             # Windows
+ehthumbs.db           # Windows
+Desktop.ini           # Windows
+
+# ------------------------
+# Logs
+# ------------------------
+*.log

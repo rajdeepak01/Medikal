@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Manage Doctors - ApkaDr.</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Custom Colors inspired by ApkaDr. Logo (consistent across the app) */
+        :root {
+            --apkadr-dark-blue: #1e3a8a;
+            /* From logo's pen */
+            --apkadr-gold: #facc15;
+            /* From logo's pen accent */
+            --apkadr-black: #343a40;
+            /* General dark text/element, from logo text */
+            --apkadr-light-gray: #f7f7f7;
+            /* Soft background */
+            --apkadr-white: #ffffff;
+        }
+
+        /* Extend Tailwind's default theme with custom colors */
+        @tailwind base;
+        @tailwind components;
+        @tailwind utilities;
+
+        @layer base {
+            body {
+                font-family: 'Poppins', sans-serif;
+                /* Consistent font */
+                @apply bg-apkadr-light-gray text-apkadr-black overflow-x-hidden;
+                /* Ensure no horizontal overflow */
+            }
+        }
+
+        /* Custom classes for specific elements for reusability and clarity */
+        .sidebar-link-active {
+            @apply bg-white bg-opacity-10 text-white border-l-4 border-apkadr-gold pl-5;
+        }
+
+        /* Styles for flash messages */
+        .alert-success {
+            @apply bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4;
+        }
+
+        .alert-danger {
+            @apply bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4;
+        }
+
+        .alert-info {
+            @apply bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded relative mb-4;
+        }
+
+        .alert-warning {
+            @apply bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded relative mb-4;
+        }
+
+        /* For mobile table (vertical display) */
+        @media screen and (max-width: 767px) {
+            .vertical-table thead {
+                @apply hidden;
+            }
+
+            .vertical-table tr {
+                @apply block mb-4 border border-gray-200 rounded-lg shadow-sm;
+                background-color: var(--apkadr-white); /* Ensure row background is white */
+            }
+
+            .vertical-table td {
+                @apply block text-sm text-gray-800 text-right px-4 py-2 relative;
+                border-bottom: 1px solid #eee; /* Light separator between cells */
+            }
+
+            .vertical-table td:last-child {
+                border-bottom: 0;
+            }
+
+            .vertical-table td::before {
+                content: attr(data-label);
+                @apply float-left font-semibold text-apkadr-black uppercase;
+                margin-right: 1rem;
+            }
+
+            /* Adjust badge styling for vertical table */
+            .vertical-table .badge {
+                @apply inline-block float-none; /* Remove float for better centering */
+            }
+
+            /* Adjust action buttons container for mobile vertical display */
+            .vertical-table .actions-cell .flex.flex-col {
+                @apply flex-row flex-wrap justify-end gap-2; /* Align items to end with gap */
+            }
+            .vertical-table .actions-cell .flex.flex-col > * {
+                @apply flex-grow-0 flex-shrink-0; /* Prevent items from stretching excessively */
+            }
+        }
+    </style>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'apkadr-dark-blue': 'var(--apkadr-dark-blue)',
+                        'apkadr-gold': 'var(--apkadr-gold)',
+                        'apkadr-black': 'var(--apkadr-black)',
+                        'apkadr-light-gray': 'var(--apkadr-light-gray)',
+                        'apkadr-white': 'var(--apkadr-white)',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+
+<body class="flex flex-col min-h-screen">
+    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+<script>
+  window.OneSignalDeferred = window.OneSignalDeferred || [];
+  OneSignalDeferred.push(async function(OneSignal) {
+    await OneSignal.init({
+      appId: "b247bbe3-988e-4438-b5b2-74207755fea4",
+      notifyButton: {
+        enable: true
+      }
+    });
+
+    // Check notification permission
+    const permission = await OneSignal.Notifications.permission;
+    if (permission !== 'granted') {
+      console.log("Requesting permission...");
+      await OneSignal.Notifications.requestPermission();
+    }
+
+    // Get player ID from subscription
+    const subscription = await OneSignal.User.PushSubscription.get();
+    if (subscription && subscription.id) {
+      console.log("Player ID:", subscription.id);
+      
+      // Send player ID to backend
+      fetch('/save_player_id', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ player_id: subscription.id })
+      });
+    } else {
+      console.warn("User not subscribed or no player ID available.");
+    }
+  });
+</script>
+
+    <div class="flex flex-1">
+        <aside id="sidebar" class="w-72 bg-apkadr-black text-white shadow-lg transition-all duration-300 ease-in-out
+                       hidden lg:flex flex-col flex-shrink-0">
+            <div class="p-5 mb-0 text-center bg-black bg-opacity-20 border-b border-white border-opacity-10">
+                <img src="/static/images/apkadr.logo.jpg" alt="ApkaDr. Logo"
+                    class="w-20 h-20 object-cover rounded-full mx-auto border-2 border-apkadr-gold shadow-md">
+            </div>
+            <nav class="mt-4 flex-grow">
+                <ul class="flex flex-col">
+                    <li>
+                        <a class="flex items-center py-4 px-6 text-white text-opacity-75 font-medium
+                                  hover:bg-white hover:bg-opacity-10 hover:text-white hover:border-l-4 hover:border-apkadr-gold hover:pl-5"
+                            href="{{ url_for('admin_dashboard') }}">
+                            <i class="fas fa-tachometer-alt mr-3 text-lg"></i> Dashboard
+                        </a>
+                    </li>
+                    <li>
+                        <a class="flex items-center py-4 px-6 text-white text-opacity-75 font-medium
+                                  hover:bg-white hover:bg-opacity-10 hover:text-white hover:border-l-4 hover:border-apkadr-gold hover:pl-5
+                                  sidebar-link-active"
+                            href="{{ url_for('manage_doctors') }}">
+                            <i class="fas fa-user-md mr-3 text-lg"></i> Manage Doctors
+                        </a>
+                    </li>
+                    <li>
+                        <a class="flex items-center py-4 px-6 text-white text-opacity-75 font-medium
+                                  hover:bg-white hover:bg-opacity-10 hover:text-white hover:border-l-4 hover:border-apkadr-gold hover:pl-5"
+                            href="{{ url_for('manage_users') }}">
+                            <i class="fas fa-users mr-3 text-lg"></i> Manage Users
+                        </a>
+                    </li>
+                    <li>
+                        <a class="flex items-center py-4 px-6 text-white text-opacity-75 font-medium
+                                  hover:bg-white hover:bg-opacity-10 hover:text-white hover:border-l-4 hover:border-apkadr-gold hover:pl-5"
+                            href="{{ url_for('appointments') }}">
+                            <i class="fas fa-calendar-check mr-3 text-lg"></i> Appointments
+                        </a>
+                    </li>
+                    <li>
+                        <a class="flex items-center py-4 px-6 text-white text-opacity-75 font-medium
+                                  hover:bg-white hover:bg-opacity-10 hover:text-white hover:border-l-4 hover:border-apkadr-gold hover:pl-5"
+                            href="{{ url_for('add_doctor') }}">
+                            <i class="fas fa-user-plus mr-3 text-lg"></i> Add Doctor
+                        </a>
+                    </li>
+                    <li>
+                        <a class="flex items-center py-4 px-6 text-white text-opacity-75 font-medium
+                                  hover:bg-white hover:bg-opacity-10 hover:text-white hover:border-l-4 hover:border-apkadr-gold hover:pl-5"
+                            href="{{ url_for('logout') }}">
+                            <i class="fas fa-sign-out-alt mr-3 text-lg"></i> Logout
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </aside>
+
+        <main class="flex-grow p-4 md:p-8 bg-apkadr-light-gray flex flex-col">
+            <header class="flex justify-between items-center bg-apkadr-black text-white p-4 shadow-md lg:hidden mb-4">
+                <button id="mobile-menu-button" class="text-white text-xl focus:outline-none">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <h2 class="text-xl font-semibold text-white">Manage Doctors</h2>
+                <div></div> </header>
+
+            <div id="mobile-sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden lg:hidden"
+                onclick="toggleMobileSidebar()"></div>
+            <div id="mobile-sidebar"
+                class="fixed top-0 left-0 h-full w-72 bg-apkadr-black text-white shadow-lg z-50 transform -translate-x-full transition-transform duration-300 ease-in-out lg:hidden">
+                <div class="p-5 border-b border-white border-opacity-10 flex items-center justify-between">
+                    <h5 class="text-xl font-semibold flex items-center gap-2">
+                        <img src="/static/images/apkadr.logo.jpg" alt="ApkaDr. Logo"
+                            class="w-10 h-10 object-cover rounded-full border-1.5 border-apkadr-gold">
+                        ApkaDr. Admin
+                    </h5>
+                    <button class="text-white focus:outline-none" onclick="toggleMobileSidebar()">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                <nav class="mt-0">
+                    <ul class="flex flex-col">
+                        <li>
+                            <a class="flex items-center py-4 px-6 text-white text-opacity-75 font-medium
+                                      hover:bg-white hover:bg-opacity-10 hover:text-white hover:border-l-4 hover:border-apkadr-gold hover:pl-5"
+                                href="{{ url_for('admin_dashboard') }}">
+                                <i class="fas fa-tachometer-alt mr-3 text-lg"></i> Dashboard
+                            </a>
+                        </li>
+                        <li>
+                            <a class="flex items-center py-4 px-6 text-white text-opacity-75 font-medium
+                                      hover:bg-white hover:bg-opacity-10 hover:text-white hover:border-l-4 hover:border-apkadr-gold hover:pl-5 sidebar-link-active"
+                                href="{{ url_for('manage_doctors') }}">
+                                <i class="fas fa-user-md mr-3 text-lg"></i> Manage Doctors
+                            </a>
+                        </li>
+                        <li>
+                            <a class="flex items-center py-4 px-6 text-white text-opacity-75 font-medium
+                                      hover:bg-white hover:bg-opacity-10 hover:text-white hover:border-l-4 hover:border-apkadr-gold hover:pl-5"
+                                href="{{ url_for('manage_users') }}">
+                                <i class="fas fa-users mr-3 text-lg"></i> Manage Users
+                            </a>
+                        </li>
+                        <li>
+                            <a class="flex items-center py-4 px-6 text-white text-opacity-75 font-medium
+                                      hover:bg-white hover:bg-opacity-10 hover:text-white hover:border-l-4 hover:border-apkadr-gold hover:pl-5"
+                                href="{{ url_for('appointments') }}">
+                                <i class="fas fa-calendar-check mr-3 text-lg"></i> Appointments
+                            </a>
+                        </li>
+                        <li>
+                            <a class="flex items-center py-4 px-6 text-white text-opacity-75 font-medium
+                                      hover:bg-white hover:bg-opacity-10 hover:text-white hover:border-l-4 hover:border-apkadr-gold hover:pl-5"
+                                href="{{ url_for('add_doctor') }}">
+                                <i class="fas fa-user-plus mr-3 text-lg"></i> Add Doctor
+                            </a>
+                        </li>
+                        <li>
+                            <a class="flex items-center py-4 px-6 text-white text-opacity-75 font-medium
+                                      hover:bg-white hover:bg-opacity-10 hover:text-white hover:border-l-4 hover:border-apkadr-gold hover:pl-5"
+                                href="{{ url_for('logout') }}">
+                                <i class="fas fa-sign-out-alt mr-3 text-lg"></i> Logout
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+
+           
+<main class="flex-grow p-6 md:p-8 bg-apkadr-light-gray flex flex-col">
+    <h2 class="text-3xl font-semibold text-apkadr-black mb-6 hidden lg:block">Edit Doctor</h2>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+            <div class="alert-{{ category }} px-4 py-3 rounded relative mb-4">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+    {% endwith %}
+
+    <form action="{{ url_for('edit_doctor', doctor_id=doctor.id) }}" method="post" enctype="multipart/form-data" class="bg-white p-6 md:p-8 rounded-xl shadow-lg">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 mb-4">
+            <div>
+                <label for="name" class="block text-apkadr-black text-base font-medium mb-1">Full Name</label>
+                <input type="text" id="name" name="full_name" required value="{{ doctor.full_name }}"
+                       class="w-full px-4 py-2 border border-gray-300 rounded-md">
+            </div>
+            <div>
+                <label for="email" class="block text-apkadr-black text-base font-medium mb-1">Email</label>
+                <input type="email" id="email" name="email" required value="{{ doctor.email }}"
+                       class="w-full px-4 py-2 border border-gray-300 rounded-md">
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 mb-4">
+            <div>
+                <label for="phone" class="block text-apkadr-black text-base font-medium mb-1">Phone</label>
+                <input type="tel" id="phone" name="phone" required value="{{ doctor.phone }}"
+                       class="w-full px-4 py-2 border border-gray-300 rounded-md">
+            </div>
+            <div>
+                <label for="specialty" class="block text-apkadr-black text-base font-medium mb-1">Specialty</label>
+                <input type="text" id="specialty" name="specialty" required value="{{ doctor.specialty }}"
+                       class="w-full px-4 py-2 border border-gray-300 rounded-md">
+            </div>
+        </div>
+
+        <div class="mb-4">
+            <label for="address" class="block text-apkadr-black text-base font-medium mb-1">Address</label>
+            <input type="text" id="address" name="address" required value="{{ doctor.address }}"
+                   class="w-full px-4 py-2 border border-gray-300 rounded-md">
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 mb-6">
+            <div>
+                <label for="password" class="block text-apkadr-black text-base font-medium mb-1">New Password (optional)</label>
+                <input type="password" id="password" name="password"
+                       class="w-full px-4 py-2 border border-gray-300 rounded-md">
+            </div>
+            <div>
+                <label for="status" class="block text-apkadr-black text-base font-medium mb-1">Status</label>
+                <select id="status" name="status"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-md">
+                    <option value="pending" {% if doctor.status == 'pending' %}selected{% endif %}>Pending</option>
+                    <option value="approved" {% if doctor.status == 'approved' %}selected{% endif %}>Approved</option>
+                    <option value="rejected" {% if doctor.status == 'rejected' %}selected{% endif %}>Rejected</option>
+                </select>
+            </div>
+        </div>
+
+        <h4 class="text-xl font-semibold mb-4 text-apkadr-black">Availability Slots</h4>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-4 mb-6">
+            <div>
+                <label for="morning_slot" class="block text-apkadr-black text-base font-medium mb-1">Morning Slot</label>
+                <input type="text" id="morning_slot" name="morning_slot" value="{{ doctor.morning_slot }}"
+                       class="w-full px-4 py-2 border border-gray-300 rounded-md">
+            </div>
+            <div>
+                <label for="afternoon_slot" class="block text-apkadr-black text-base font-medium mb-1">Afternoon Slot</label>
+                <input type="text" id="afternoon_slot" name="afternoon_slot" value="{{ doctor.afternoon_slot }}"
+                       class="w-full px-4 py-2 border border-gray-300 rounded-md">
+            </div>
+            <div>
+                <label for="evening_slot" class="block text-apkadr-black text-base font-medium mb-1">Evening Slot</label>
+                <input type="text" id="evening_slot" name="evening_slot" value="{{ doctor.evening_slot }}"
+                       class="w-full px-4 py-2 border border-gray-300 rounded-md">
+            </div>
+        </div>
+
+        <div class="mb-6">
+            <label for="photo" class="block text-apkadr-black text-base font-medium mb-1">Profile Photo</label>
+            <input type="file" id="photo" name="photo" accept="image/*"
+                   class="w-full text-apkadr-black file:bg-apkadr-dark-blue file:text-white file:rounded-md">
+        </div>
+
+        <button type="submit"
+                class="w-full bg-apkadr-dark-blue text-white py-3 px-4 rounded-md text-lg hover:bg-indigo-700">
+            Update Doctor
+        </button>
+    </form>
+</main>
+
+    <footer class="mt-auto py-4 text-center text-gray-500 text-xs bg-white shadow-inner">
+        Copyright &copy; 2025 ApkaDr. All rights reserved.<br>
+        Powered by <a href="https://XyneroTech Solutions.io" class="text-indigo-600 hover:underline">XyneroTech Solutions.io</a>
+    </footer>
+
+    <script>
+        const mobileMenuButton = document.getElementById('mobile-menu-button');
+        const mobileSidebar = document.getElementById('mobile-sidebar');
+        const mobileSidebarOverlay = document.getElementById('mobile-sidebar-overlay');
+
+        function toggleMobileSidebar() {
+            mobileSidebar.classList.toggle('-translate-x-full');
+            mobileSidebarOverlay.classList.toggle('hidden');
+        }
+
+        mobileMenuButton.addEventListener('click', toggleMobileSidebar);
+
+        // Close sidebar when a link is clicked (optional, but good for UX)
+        const sidebarLinks = mobileSidebar.querySelectorAll('a');
+        sidebarLinks.forEach(link => {
+            link.addEventListener('click', () => {
+                if (!mobileSidebar.classList.contains('-translate-x-full')) {
+                    toggleMobileSidebar();
+                }
+            });
+        });
+    </script>
+  
+
+
+</body>
+
+</html>
