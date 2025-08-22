@@ -24,15 +24,8 @@ def robots():
 def google_verification():
     return send_from_directory(os.path.join(app.root_path, 'static'), 'google0bd79030d3228202.html')
 
-# ✅ Database configuration (SQLite fallback)
-database_url = os.environ.get("DATABASE_URL")
-
-if database_url:
-    app.config["SQLALCHEMY_DATABASE_URI"] = database_url
-else:
-    # Default to SQLite (local file db.sqlite3 in project root)
-    app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///db.sqlite3"
-
+# ✅ Always use SQLite (local db.sqlite3 file in project root)
+app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///db.sqlite3"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 # ✅ Session configuration
