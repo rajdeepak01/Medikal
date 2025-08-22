@@ -5,11 +5,13 @@ from datetime import timedelta
 from dotenv import load_dotenv
 from flask_migrate import Migrate
 
+# ✅ Load environment variables from .env file
 load_dotenv()
 
+# ✅ Initialize Flask app
 app = Flask(__name__, static_folder='static')
 
-# ✅ Static routes
+# ✅ Static file routes
 @app.route('/sitemap.xml', endpoint='sitemap_static')
 def sitemap():
     return send_from_directory(app.static_folder, 'sitemap.xml')
@@ -22,38 +24,34 @@ def robots():
 def google_verification():
     return send_from_directory(os.path.join(app.root_path, 'static'), 'google0bd79030d3228202.html')
 
+# ✅ Database configuration (SQLite fallback)
+database_url = os.environ.get("DATABASE_URL")
 
-# ✅ Database config
-use_sqlite = os.environ.get("USE_SQLITE") == "True"   # toggle with env var
+if database_url:
+    app.config["SQLALCHEMY_DATABASE_URI"] = database_url
+else:
+    # Default to SQLite (local file db.sqlite3 in project root)
+    app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///db.sqlite3"
 
-database_url = None if use_sqlite else os.environ.get("DATABASE_URL")
-
-# Fix old postgres:// URLs → postgresql://
-if database_url and database_url.startswith("postgres://"):
-    database_url = database_url.replace("postgres://", "postgresql://", 1)
-
-# Fall back to SQLite if no database_url
-app.config["SQLALCHEMY_DATABASE_URI"] = database_url or "sqlite:///app.db"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
-
-# ✅ Sessions
-app.secret_key = os.environ.get("FLASK_SECRET_KEY", "dev_secret")
+# ✅ Session configuration
+app.secret_key = os.environ.get("FLASK_SECRET_KEY", "dev_secret_key")  
 app.config["SESSION_PERMANENT"] = True
 app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(days=30)
 app.config["SESSION_COOKIE_NAME"] = "yourdr_session"
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
-app.config["SESSION_COOKIE_SECURE"] = os.environ.get("SESSION_COOKIE_SECURE", "False") == "True"
+app.config["SESSION_COOKIE_SECURE"] = False  # Set to True in production with HTTPS
 
-
-# ✅ Init extensions
+# ✅ Initialize extensions
 db.init_app(app)
 migrate = Migrate(app, db)
 
+# ✅ Import routes inside app context
 with app.app_context():
     from backend import controllers
-    # db.create_all()  # Uncomment only if not using migrations
+    # db.create_all()  # Optional: uncomment for first-time setup
 
-
+# ✅ Run app
 if __name__ == "__main__":
     app.run(debug=os.environ.get("FLASK_DEBUG") == "True")
