@@ -10,7 +10,9 @@ load_dotenv()
 app = Flask(__name__, static_folder='static')
 
 
-# 🌐 STATIC ROUTES ---------------------------------
+# ---------------------------
+# 🌐 STATIC ROUTES
+# ---------------------------
 
 @app.route('/sitemap.xml', endpoint='sitemap_static')
 def sitemap():
@@ -28,47 +30,65 @@ def google_verification():
     )
 
 
-# 💾 DATABASE CONFIG (SQLite ON RENDER) -------------
+# ---------------------------
+# 💾 DATABASE CONFIG (RENDER LOCAL INSTANCE)
+# ---------------------------
 
 RENDER = os.getenv("RENDER")
 
 if RENDER:
-    DB_PATH = "/data/db.sqlite3"     # persistent on render
-    os.makedirs("/data", exist_ok=True)   # ensure folder exists
+    # Render allows writes inside its own project directory
+    DB_DIR = "/opt/render/project/src/data"
+    os.makedirs(DB_DIR, exist_ok=True)
+    DB_PATH = os.path.join(DB_DIR, "db.sqlite3")
+
     app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{DB_PATH}"
+    print(f"Using Render instance DB at: {DB_PATH}")
+
 else:
+    # Local dev
     app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///db.sqlite3"
 
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 
-# 🔐 SESSION CONFIG --------------------------------
+# ---------------------------
+# 🔐 SESSION CONFIG
+# ---------------------------
 
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "dev_secret_key")
 app.config["SESSION_PERMANENT"] = True
 app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(days=30)
+app.config["SESSION_COOKIE_NAME"] = "yourdr_session"
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 app.config["SESSION_COOKIE_SECURE"] = bool(RENDER)
 
 
-# 🗄️ DB INIT + MIGRATIONS --------------------------
+# ---------------------------
+# 🗄️ DB INIT + MIGRATIONS
+# ---------------------------
 
 db.init_app(app)
 migrate = Migrate(app, db)
 
 
-# 📦 AUTO TABLE CREATION ----------------------------
+# ---------------------------
+# 📦 SAFE AUTO TABLE CREATION
+# ---------------------------
 
 with app.app_context():
     from backend import controllers
     try:
         db.create_all()
-        print("✔ DB initialized OK at", DB_PATH)
+        print("✔ Database initialized")
     except Exception as e:
         print("❌ DB Init Error:", e)
 
 
-# 🚀 MAIN (LOCAL DEV) -------------------------------
+# ---------------------------
+# 🚀 LOCAL DEV ENTRYPOINT
+# ---------------------------
 
 if __name__ == "__main__":
-    app.run(debug=os.environ.get("FLASK_DEBUG") == "True")
+    debug = os.environ.get("FLASK_DEBUG") == "True"
+    app.run(debug=debug)
