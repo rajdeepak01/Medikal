@@ -26,8 +26,7 @@ share/
 # ------------------------
 # Flask
 # ------------------------
-# Flask instance folder (contains local SQLite DB, configs)
-instance/
+
 
 # ------------------------
 # Database files
