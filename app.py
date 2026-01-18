@@ -9,6 +9,9 @@ load_dotenv()
 
 app = Flask(__name__, static_folder='static')
 
+
+# 🌐 STATIC ROUTES ---------------------------------
+
 @app.route('/sitemap.xml', endpoint='sitemap_static')
 def sitemap():
     return send_from_directory(app.static_folder, 'sitemap.xml')
@@ -19,55 +22,53 @@ def robots():
 
 @app.route('/google0bd79030d3228202.html')
 def google_verification():
-    return send_from_directory(os.path.join(app.root_path, 'static'), 'google0bd79030d3228202.html')
+    return send_from_directory(
+        os.path.join(app.root_path, 'static'),
+        'google0bd79030d3228202.html'
+    )
 
 
-# ---------------------------
-# 💾 DATABASE CONFIG (SQLite)
-# ---------------------------
+# 💾 DATABASE CONFIG (SQLite ON RENDER) -------------
 
-# Detect Render environment
 RENDER = os.getenv("RENDER")
 
 if RENDER:
-    # SQLite stored on persistent volume
-    DB_PATH = "/data/db.sqlite3"
+    DB_PATH = "/data/db.sqlite3"     # persistent on render
+    os.makedirs("/data", exist_ok=True)   # ensure folder exists
     app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{DB_PATH}"
 else:
-    # Local dev
     app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///db.sqlite3"
 
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 
-# ---------------------------
-# 🔐 SESSION CONFIG
-# ---------------------------
+# 🔐 SESSION CONFIG --------------------------------
 
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "dev_secret_key")
 app.config["SESSION_PERMANENT"] = True
 app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(days=30)
-app.config["SESSION_COOKIE_NAME"] = "yourdr_session"
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
-app.config["SESSION_COOKIE_SECURE"] = False
+app.config["SESSION_COOKIE_SECURE"] = bool(RENDER)
 
 
-# ---------------------------
-# 🗄️ DB INIT + MIGRATIONS
-# ---------------------------
+# 🗄️ DB INIT + MIGRATIONS --------------------------
 
 db.init_app(app)
 migrate = Migrate(app, db)
 
 
-# ---------------------------
-# 📦 AUTO TABLE CREATION
-# ---------------------------
+# 📦 AUTO TABLE CREATION ----------------------------
 
 with app.app_context():
     from backend import controllers
-    db.create_all()   # prevents "no such table" crashes
+    try:
+        db.create_all()
+        print("✔ DB initialized OK at", DB_PATH)
+    except Exception as e:
+        print("❌ DB Init Error:", e)
 
+
+# 🚀 MAIN (LOCAL DEV) -------------------------------
 
 if __name__ == "__main__":
     app.run(debug=os.environ.get("FLASK_DEBUG") == "True")
