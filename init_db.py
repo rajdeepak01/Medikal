@@ -24,22 +24,22 @@ with app.app_context():
 
     # Create user
     user = User(
-        fullName="John Doe",
-        email="johndoe@example.com",
+        fullName="admin",
+        email="admin@gmail.com",
         age=30,
         phone="1234567890",
         address="123 Main Street",
-        password="hashed_password",  # Note: hash in production
-        type="general"
+        password="1234567890",  # Note: hash in production
+        type="admin"
     )
 
     # Create doctor
     doctor = Doctor(
-        full_name="Dr. Alice Smith",
-        email="alice@example.com",
+        full_name="doctor1",
+        email="doctor1@gmail.com",
         phone="9876543210",
         specialty="Cardiology",
-        password="hashed_password",
+        password="1234567890",
         status="approved",
         age=40,
         address="456 Clinic Ave",

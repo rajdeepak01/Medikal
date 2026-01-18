@@ -26,7 +26,11 @@ share/
 # ------------------------
 # Flask
 # ------------------------
-
+# Allow instance folder but ignore DB files inside it
+!instance/
+!instance/.keep
+instance/*.db
+instance/*.sqlite3
 
 # ------------------------
 # Database files
@@ -44,18 +48,18 @@ share/
 # ------------------------
 # Editor / IDE settings
 # ------------------------
-.vscode/              # VS Code
-.idea/                # PyCharm / IntelliJ
+.vscode/
+.idea/
 *.sublime-project
 *.sublime-workspace
 
 # ------------------------
 # OS generated files
 # ------------------------
-.DS_Store             # macOS
-Thumbs.db             # Windows
-ehthumbs.db           # Windows
-Desktop.ini           # Windows
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
 
 # ------------------------
 # Logs
