@@ -3,32 +3,37 @@ from backend.database import db
 from backend.models import User, Doctor, Appointment
 from flask import Flask
 
-# ✅ Setup a temporary Flask app for database initialization
+# Setup temporary app for seeding / initial DB creation
 app = Flask(__name__)
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///app.db"
+
+# Use SAME DB as main application
+app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///db.sqlite3"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 db.init_app(app)
 
 with app.app_context():
     print("🔄 Creating database and tables...")
-    db.drop_all()   # ⚠️ Clears old tables (optional, remove if you want to keep data)
+
+    # Optional: Clear old tables (remove if you want to keep data)
+    # db.drop_all()
+
     db.create_all()
 
     print("✅ Inserting dummy data...")
 
-    # Create dummy user
+    # Create user
     user = User(
         fullName="John Doe",
         email="johndoe@example.com",
         age=30,
         phone="1234567890",
         address="123 Main Street",
-        password="hashed_password",  # Ideally hash in production
+        password="hashed_password",  # Note: hash in production
         type="general"
     )
 
-    # Create dummy doctor
+    # Create doctor
     doctor = Doctor(
         full_name="Dr. Alice Smith",
         email="alice@example.com",
@@ -41,20 +46,22 @@ with app.app_context():
         clinic_status="open"
     )
 
-    # Create dummy appointment
+    # Add and persist to generate IDs
+    db.session.add(user)
+    db.session.add(doctor)
+    db.session.commit()
+
+    # Create appointment using auto-assigned IDs
     appointment = Appointment(
-        user_id=1,
-        doctor_id=1,
+        user_id=user.id,
+        doctor_id=doctor.id,
         appointment_date=datetime.date.today(),
         appointment_time="10:30 AM",
-        symptoms="Chest pain and shortness of breath",
+        symptoms="Chest pain & shortness of breath",
         status="pending",
         token_number="A001"
     )
 
-    # Add to session
-    db.session.add(user)
-    db.session.add(doctor)
     db.session.add(appointment)
     db.session.commit()
 
