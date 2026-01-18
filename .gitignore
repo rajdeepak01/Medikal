@@ -26,18 +26,7 @@ share/
 # ------------------------
 # Flask
 # ------------------------
-# Allow instance folder but ignore DB files inside it
-!instance/
-!instance/.keep
-instance/*.db
-instance/*.sqlite3
 
-# ------------------------
-# Database files
-# ------------------------
-*.sqlite3
-*.db
-*.sql
 
 # ------------------------
 # Environment variables
